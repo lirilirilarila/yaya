@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>teste8</title>
+
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  width: 100vw;
+  height: 100vh;
+  background: black;
+  overflow: hidden;
+  color: white;
+}
+
+/* IMAGEM DE FUNDO */
+#bg {
+  position: absolute;
+  inset: 0;
+  background: url("foto.png") center/cover no-repeat;
+  opacity: 0.5;
+  z-index: 0;
+}
+
+/* Tela inicial */
+#inicio {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+}
+
+h1 {
+  font-size: 42px;
+  margin-bottom: 40px;
+}
+
+#area-botoes {
+  position: relative;
+  width: 400px;
+  height: 120px;
+}
+
+button {
+  padding: 15px 45px;
+  font-size: 22px;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#sim {
+  position: absolute;
+  right: 0;
+  background: white;
+  color: black;
+  font-weight: bold;
+}
+
+#nao {
+  position: absolute;
+  left: 0;
+  background: #333;
+  color: white;
+}
+
+/* Tela final */
+#final {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+}
+
+#mensagem-final {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  z-index: 3;
+}
+
+#mensagem-final h2 {
+  font-size: 48px;
+  margin-bottom: 20px;
+}
+
+#mensagem-final span {
+  font-size: 22px;
+}
+
+canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- TELA INICIAL -->
+<div id="inicio">
+  <h1>iai fiota?</h1>
+  <div id="area-botoes">
+    <button id="nao">não</button>
+    <button id="sim">sim</button>
+  </div>
+</div>
+
+<!-- TELA FINAL -->
+<div id="final">
+  <div id="bg"></div>
+  <canvas id="fogos"></canvas>
+
+  <div id="mensagem-final">
+    <h2>Era óbvio que sim né</h2>
+    <span>até que enfim 💖</span>
+  </div>
+</div>
+
+<script>
+const nao = document.getElementById("nao");
+const sim = document.getElementById("sim");
+const inicio = document.getElementById("inicio");
+const final = document.getElementById("final");
+
+/* BOTÃO NÃO FOGE */
+function fugir() {
+  nao.style.left = Math.random() * (window.innerWidth - 100) + "px";
+  nao.style.top = Math.random() * (window.innerHeight - 50) + "px";
+  nao.style.position = "fixed";
+}
+
+nao.addEventListener("mouseenter", fugir);
+nao.addEventListener("click", fugir);
+
+/* BOTÃO SIM */
+sim.addEventListener("click", () => {
+  inicio.style.display = "none";
+  final.style.display = "block";
+  iniciarFogos();
+});
+
+/* ================= FOGOS ================= */
+function iniciarFogos() {
+  const canvas = document.getElementById("fogos");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+
+  const foguetes = [];
+  const particulas = [];
+
+  let explosoes = 0;
+  const MAX_EXPLOSOES = 16; // 15 normais + coração
+
+  function criarFoguete() {
+    foguetes.push({
+      x: Math.random() * canvas.width,
+      y: canvas.height,
+      vy: Math.random() * -8 - 9,
+      exploded: false
+    });
+  }
+
+  function explodir(x, y) {
+    const cores = ["#ff4d4d", "#ffd633", "#4dff4d", "#4dd2ff", "#ff66ff"];
+    const cor = cores[Math.floor(Math.random() * cores.length)];
+    const inicio = Date.now();
+
+    for (let i = 0; i < 120; i++) {
+      particulas.push({
+        x,
+        y,
+        vx: (Math.random() - 0.5) * 6,
+        vy: (Math.random() - 0.5) * 6,
+        gravity: 0.08,
+        cor,
+        inicio
+      });
+    }
+  }
+
+  function explodirCoracao(x, y) {
+    const inicio = Date.now();
+
+    for (let t = 0; t < Math.PI * 2; t += 0.07) {
+      const px = 16 * Math.pow(Math.sin(t), 3);
+      const py =
+        -(13 * Math.cos(t)
+        - 5 * Math.cos(2 * t)
+        - 2 * Math.cos(3 * t)
+        - Math.cos(4 * t));
+
+      particulas.push({
+        x,
+        y,
+        vx: px * 0.9,
+        vy: py * 0.9,
+        gravity: 0.04,
+        cor: "red",
+        inicio
+      });
+    }
+  }
+
+  function animar() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    foguetes.forEach((f, i) => {
+      f.y += f.vy;
+      f.vy += 0.05;
+
+      ctx.fillStyle = "white";
+      ctx.beginPath();
+      ctx.arc(f.x, f.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (f.vy >= 0 && !f.exploded) {
+        explosoes++;
+
+        if (explosoes === MAX_EXPLOSOES) {
+          explodirCoracao(
+            canvas.width / 2,
+            canvas.height / 2 - 60
+          );
+        } else {
+          explodir(f.x, f.y);
+        }
+
+        f.exploded = true;
+        foguetes.splice(i, 1);
+      }
+    });
+
+    particulas.forEach((p, i) => {
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += p.gravity;
+
+      ctx.fillStyle = p.cor;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      if (Date.now() - p.inicio > 3000) {
+        particulas.splice(i, 1);
+      }
+    });
+
+    requestAnimationFrame(animar);
+  }
+
+  const intervalo = setInterval(() => {
+    if (explosoes < MAX_EXPLOSOES) {
+      criarFoguete();
+    } else {
+      clearInterval(intervalo);
+    }
+  }, 700);
+
+  animar();
+}
+</script>
+
+</body>
+</html>
+
